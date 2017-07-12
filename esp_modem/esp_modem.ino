@@ -24,7 +24,7 @@ String cmd = "";           // Gather a new AT command to this string from serial
 bool cmdMode = true;       // Are we in AT command mode or connected mode
 bool telnet = true;        // Is telnet control code handling enabled
 #define SWITCH_PIN 0       // GPIO0 (programmind mode pin)
-#define DEFAULT_BPS 115200 // 2400 safe for all old computers including C64
+#define DEFAULT_BPS 9600   // 2400 safe for all old computers including C64
 //#define USE_SWITCH 1     // Use a software reset switch
 //#define DEBUG 1          // Print additional debug information to serial channel
 #undef DEBUG
@@ -58,6 +58,7 @@ uint8_t txBuf[TX_BUF_SIZE];
 void setup()
 {
   Serial.begin(DEFAULT_BPS);
+  delay(1000);
   myBps = DEFAULT_BPS;
 
 #ifdef USE_SWITCH
@@ -79,7 +80,9 @@ void setup()
   {
     Serial.print("Listening to connections at port ");
     Serial.print(LISTEN_PORT);
-    Serial.println(", which result in RING and you can answer with ATA.");
+    Serial.println(", ");
+    Serial.println("which result in RING and you can answer");
+    Serial.println("with ATA.");
     tcpServer.begin();
   }
   else
@@ -335,7 +338,7 @@ void loop()
     // In command mode - don't exchange with TCP but gather characters to a string
     if (Serial.available())
     {
-      char chr = Serial.read();
+      char chr = Serial.read() & 0x7F;
 
       // Return, enter, new line, carriage return.. anything goes to end the command
       if ((chr == '\n') || (chr == '\r')) 
@@ -383,16 +386,15 @@ void loop()
       // Disconnect if going to AT mode with "+++" sequence
       for (int i=0; i<(int)len; i++)
       {
-        if (txBuf[i] == '+') plusCount++; else plusCount = 0;
+        if (txBuf[i] == '+') 
+          plusCount++; 
+        else 
+          plusCount = 0;
         if (plusCount >= 3)
         {
           plusTime = millis();
         }
-        if (txBuf[i] != '+')
-        {
-          plusCount = 0;
         }
-      }
 
       // Double (escape) every 0xff for telnet, shifting the following bytes
       // towards the end of the buffer from that point
